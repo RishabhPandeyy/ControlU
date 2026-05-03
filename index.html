@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ControlU — AI-Powered Intrusion Detection System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+/* ─── RESET & BASE ──────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0a0f1c;
+  --bg2:       #0d1529;
+  --bg3:       #111827;
+  --cyan:      #00f5ff;
+  --green:     #00ff9f;
+  --blue:      #0066ff;
+  --amber:     #ffaa00;
+  --red:       #ff3c5f;
+  --text:      #e4eeff;
+  --muted:     #5a7090;
+  --glass:     rgba(0, 245, 255, 0.04);
+  --glass-b:   rgba(0, 245, 255, 0.12);
+  --font-head: 'Orbitron', sans-serif;
+  --font-body: 'Exo 2', sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* particle canvas */
+#particle-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* containers */
+.container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; position: relative; z-index: 1; }
+
+/* ─── SCROLL REVEAL ─────────────────────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* ─── SECTION COMMON ────────────────────────────────── */
+.section { padding: 7rem 0; position: relative; z-index: 1; }
+.section::before {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--glass-b), transparent);
+}
+
+.section-label {
+  font-family: var(--font-head);
+  font-size: 0.7rem;
+  letter-spacing: 0.25em;
+  color: var(--cyan);
+  margin-bottom: 1rem;
+  opacity: 0.7;
+}
+
+.section-title {
+  font-family: var(--font-head);
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  font-weight: 700;
+  margin-bottom: 3.5rem;
+  line-height: 1.2;
+}
+
+.highlight {
+  color: var(--cyan);
+  text-shadow: 0 0 20px rgba(0,245,255,0.5);
+}
+
+/* ─── HEADER / HERO ─────────────────────────────────── */
+#hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  padding: 0 2rem;
+  background: radial-gradient(ellipse 80% 60% at 50% 40%, rgba(0,102,255,0.08) 0%, transparent 70%);
+}
+
+.badge {
+  font-family: var(--font-head);
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  color: var(--green);
+  border: 1px solid rgba(0,255,159,0.3);
+  padding: 0.35rem 1.2rem;
+  border-radius: 2rem;
+  margin-bottom: 2rem;
+  backdrop-filter: blur(6px);
+  background: rgba(0,255,159,0.05);
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+@keyframes pulse-badge {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0,255,159,0.3); }
+  50%       { box-shadow: 0 0 0 8px rgba(0,255,159,0); }
+}
+
+h1.glitch {
+  font-family: var(--font-head);
+  font-size: clamp(3.5rem, 10vw, 8rem);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: #fff;
+  text-shadow:
+    0 0 10px rgba(0,245,255,0.6),
+    0 0 40px rgba(0,245,255,0.3),
+    0 0 80px rgba(0,102,255,0.2);
+  position: relative;
+  animation: glitch-main 5s infinite;
+}
+h1.glitch::before, h1.glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+}
+h1.glitch::before {
+  color: var(--cyan);
+  clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%);
+  animation: glitch-a 5s infinite;
+  opacity: 0;
+}
+h1.glitch::after {
+  color: var(--red);
+  clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%);
+  animation: glitch-b 5s infinite;
+  opacity: 0;
+}
+@keyframes glitch-main { 0%,90%,100% { transform: none; } 91% { transform: skewX(2deg); } 93% { transform: skewX(-2deg); } }
+@keyframes glitch-a {
+  0%,89%,100% { opacity:0; transform:none; }
+  90% { opacity:1; transform:translate(-4px,2px); }
+  92% { opacity:0; }
+}
+@keyframes glitch-b {
+  0%,91%,100% { opacity:0; transform:none; }
+  92% { opacity:1; transform:translate(4px,-2px); }
+  94% { opacity:0; }
+}
+
+.subtitle {
+  font-family: var(--font-body);
+  font-size: clamp(1rem, 2.5vw, 1.4rem);
+  font-weight: 300;
+  color: var(--cyan);
+  letter-spacing: 0.08em;
+  margin-bottom: 1rem;
+  margin-top: 0.5rem;
+}
+.tagline {
+  font-family: var(--font-head);
+  font-size: clamp(0.8rem, 2vw, 1rem);
+  color: var(--green);
+  letter-spacing: 0.2em;
+  min-height: 1.5em;
+  margin-bottom: 2.5rem;
+}
+.tagline::after {
+  content: '|';
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 50% { opacity:0; } }
+
+.hero-cta { display: flex; gap: 1.2rem; justify-content: center; flex-wrap: wrap; }
+
+.btn-primary {
+  font-family: var(--font-head);
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  padding: 0.85rem 2.2rem;
+  background: linear-gradient(135deg, var(--cyan), var(--blue));
+  color: var(--bg);
+  border-radius: 3px;
+  text-decoration: none;
+  font-weight: 700;
+  transition: all 0.3s;
+  box-shadow: 0 0 20px rgba(0,245,255,0.3);
+}
+.btn-primary:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 0 40px rgba(0,245,255,0.6);
+}
+.btn-ghost {
+  font-family: var(--font-head);
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  padding: 0.85rem 2.2rem;
+  border: 1px solid var(--glass-b);
+  color: var(--cyan);
+  border-radius: 3px;
+  text-decoration: none;
+  backdrop-filter: blur(4px);
+  transition: all 0.3s;
+}
+.btn-ghost:hover {
+  background: var(--glass);
+  border-color: var(--cyan);
+  box-shadow: 0 0 20px rgba(0,245,255,0.2);
+  transform: translateY(-3px);
+}
+
+.scroll-hint {
+  position: absolute;
+  bottom: 2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.scroll-hint span {
+  display: block;
+  width: 22px;
+  height: 36px;
+  border: 1.5px solid rgba(0,245,255,0.3);
+  border-radius: 12px;
+  position: relative;
+}
+.scroll-hint span::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  background: var(--cyan);
+  border-radius: 50%;
+  animation: scroll-dot 1.5s ease-in-out infinite;
+}
+@keyframes scroll-dot {
+  0%   { opacity:1; transform:translateX(-50%) translateY(0); }
+  100% { opacity:0; transform:translateX(-50%) translateY(16px); }
+}
+
+/* ─── HERO VISUAL ───────────────────────────────────── */
+#hero-visual {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem 0 4rem;
+  overflow: hidden;
+}
+
+.shield-wrapper {
+  position: relative;
+  width: 600px;
+  height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.shield-svg {
+  width: 220px;
+  height: auto;
+  position: absolute;
+  z-index: 2;
+  animation: float 4s ease-in-out infinite;
+}
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+
+.network-lines {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0; left: 0;
+}
+
+/* SVG animations */
+.ring { animation: spin-ring 20s linear infinite; transform-origin: center; }
+.ring2 { animation: spin-ring 30s linear infinite reverse; transform-origin: center; }
+@keyframes spin-ring { to { transform: rotate(360deg); } }
+
+.scan-line {
+  animation: scan-move 2s ease-in-out infinite;
+  transform-origin: left center;
+}
+@keyframes scan-move { 0%,100% { opacity:0.2; } 50% { opacity:0.7; } }
+
+.eye-pulse { animation: eye-glow 2s ease-in-out infinite; }
+@keyframes eye-glow { 0%,100% { r:10; opacity:0.9; } 50% { r:13; opacity:1; } }
+
+.node-pulse { animation: node-blink 2s ease-in-out infinite; }
+@keyframes node-blink { 0%,100% { opacity:0.4; r:4; } 50% { opacity:1; r:6; } }
+
+.net-anim { animation: net-flash 3s ease-in-out infinite; }
+@keyframes net-flash { 0%,100% { opacity:0.3; } 50% { opacity:0.8; } }
+
+/* ─── ABOUT ─────────────────────────────────────────── */
+.about-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4rem;
+  align-items: start;
+}
+.about-text p { color: rgba(228,238,255,0.75); margin-bottom: 1.2rem; }
+.about-stats {
+  display: flex;
+  gap: 2.5rem;
+  margin-top: 2.5rem;
+}
+.stat-item { text-align: center; }
+.stat-num {
+  font-family: var(--font-head);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--cyan);
+  text-shadow: 0 0 20px rgba(0,245,255,0.5);
+}
+.stat-num + span { font-family: var(--font-head); font-size:1.2rem; color: var(--cyan); }
+.stat-label { font-size: 0.7rem; color: var(--muted); letter-spacing: 0.1em; margin-top: 0.3rem; }
+
+/* Terminal */
+.terminal {
+  background: #060d1a;
+  border: 1px solid rgba(0,245,255,0.15);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(0,245,255,0.08);
+}
+.terminal-bar {
+  background: #0d1a2e;
+  padding: 0.6rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid rgba(0,245,255,0.1);
+}
+.terminal-title { font-family: var(--font-head); font-size: 0.65rem; color: var(--muted); margin-left: 0.5rem; }
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot.red    { background: #ff5f57; }
+.dot.yellow { background: #febc2e; }
+.dot.green  { background: #28c840; }
+.terminal-body { padding: 1.2rem 1.5rem; font-family: 'Courier New', monospace; font-size: 0.8rem; min-height: 260px; }
+.t-line { color: var(--green); margin-bottom: 0.4rem; }
+.t-line.warn { color: var(--amber); }
+.t-line.err  { color: var(--red); }
+.t-line.info { color: var(--cyan); }
+.t-cursor::after { content:'█'; animation: blink 1s step-end infinite; color: var(--green); }
+
+/* ─── FEATURES ──────────────────────────────────────── */
+#features { background: radial-gradient(ellipse 70% 50% at 50% 50%, rgba(0,102,255,0.05) 0%, transparent 70%); }
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.feature-card {
+  position: relative;
+  background: var(--glass);
+  border: 1px solid var(--glass-b);
+  border-radius: 12px;
+  padding: 2rem 1.5rem;
+  overflow: hidden;
+  transition: transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+  backdrop-filter: blur(8px);
+}
+.feature-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: var(--cyan);
+  box-shadow: 0 0 30px rgba(0,245,255,0.15), 0 20px 40px rgba(0,0,0,0.4);
+}
+
+.card-glow {
+  position: absolute;
+  top: -40px; left: -40px;
+  width: 120px; height: 120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(0,245,255,0.15), transparent 70%);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.card-glow.glow-green { background: radial-gradient(circle, rgba(0,255,159,0.15), transparent 70%); }
+.card-glow.glow-amber { background: radial-gradient(circle, rgba(255,170,0,0.15), transparent 70%); }
+.card-glow.glow-red   { background: radial-gradient(circle, rgba(255,60,95,0.15), transparent 70%); }
+.feature-card:hover .card-glow { opacity: 1; }
+
+.feature-icon {
+  width: 52px; height: 52px;
+  border-radius: 10px;
+  background: rgba(0,245,255,0.1);
+  border: 1px solid rgba(0,245,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 1.2rem;
+  font-size: 1.3rem;
+  color: var(--cyan);
+  transition: all 0.35s;
+}
+.feature-icon.green { color: var(--green); background: rgba(0,255,159,0.1); border-color: rgba(0,255,159,0.2); }
+.feature-icon.amber { color: var(--amber); background: rgba(255,170,0,0.1); border-color: rgba(255,170,0,0.2); }
+.feature-icon.red   { color: var(--red);   background: rgba(255,60,95,0.1);  border-color: rgba(255,60,95,0.2); }
+.feature-card:hover .feature-icon { transform: scale(1.1); box-shadow: 0 0 20px currentColor; }
+
+.feature-card h3 { font-family: var(--font-head); font-size: 0.9rem; letter-spacing: 0.05em; margin-bottom: 0.8rem; }
+.feature-card p  { font-size: 0.85rem; color: rgba(228,238,255,0.6); line-height: 1.6; margin-bottom: 1.2rem; }
+.card-tag {
+  font-family: var(--font-head);
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  color: var(--cyan);
+  border: 1px solid rgba(0,245,255,0.2);
+  padding: 0.2rem 0.7rem;
+  border-radius: 2rem;
+  display: inline-block;
+  opacity: 0.7;
+}
+
+/* ─── DASHBOARD ─────────────────────────────────────── */
+#dashboard { background: var(--bg2); }
+
+.dashboard-wrapper {
+  background: rgba(10,15,28,0.8);
+  border: 1px solid rgba(0,245,255,0.1);
+  border-radius: 16px;
+  padding: 2rem;
+  backdrop-filter: blur(12px);
+}
+
+.dash-stats {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.dash-stat-card {
+  background: var(--bg3);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  padding: 1.2rem 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: border-color 0.3s;
+}
+.dash-stat-card:hover { border-color: rgba(0,245,255,0.2); }
+.dsc-icon { width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem; }
+.dsc-icon.cyan  { background:rgba(0,245,255,0.1);color:var(--cyan); }
+.dsc-icon.red   { background:rgba(255,60,95,0.1); color:var(--red); }
+.dsc-icon.green { background:rgba(0,255,159,0.1); color:var(--green); }
+.dsc-icon.amber { background:rgba(255,170,0,0.1); color:var(--amber); }
+.dsc-num { display:block;font-family:var(--font-head);font-size:1.3rem;font-weight:700;color:#fff; }
+.dsc-label { font-size:0.7rem;color:var(--muted);letter-spacing:0.05em; }
+
+.dash-charts {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.chart-card {
+  background: var(--bg3);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  padding: 1.2rem;
+}
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-head);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  color: rgba(228,238,255,0.7);
+  margin-bottom: 1rem;
+}
+.chart-badge {
+  font-family: var(--font-head);
+  font-size: 0.55rem;
+  letter-spacing: 0.15em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 2rem;
+  background: rgba(0,255,159,0.15);
+  color: var(--green);
+  border: 1px solid rgba(0,255,159,0.3);
+}
+.chart-badge.live { animation: pulse-badge 2s infinite; }
+
+/* Threat log */
+.threat-log {
+  background: var(--bg3);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  padding: 1.2rem;
+}
+.log-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.log-entry {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-size: 0.8rem;
+  padding: 0.5rem 0.8rem;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.03);
+  border-left: 2px solid;
+  animation: log-slide 0.4s ease;
+}
+@keyframes log-slide { from { opacity:0;transform:translateX(-10px); } to { opacity:1;transform:none; } }
+.log-entry.high { border-color: var(--red); }
+.log-entry.med  { border-color: var(--amber); }
+.log-entry.low  { border-color: var(--green); }
+.log-sev {
+  font-family: var(--font-head);
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  min-width: 44px;
+  text-align: center;
+}
+.high .log-sev { background:rgba(255,60,95,0.2); color:var(--red); }
+.med  .log-sev { background:rgba(255,170,0,0.2); color:var(--amber); }
+.low  .log-sev { background:rgba(0,255,159,0.2); color:var(--green); }
+.log-ip   { color: var(--cyan); font-family: 'Courier New', monospace; font-size: 0.78rem; min-width: 120px; }
+.log-type { color: rgba(228,238,255,0.6); flex: 1; }
+.log-time { color: var(--muted); font-size: 0.7rem; }
+
+/* ─── HOW IT WORKS ──────────────────────────────────── */
+#how { background: radial-gradient(ellipse 60% 40% at 50% 60%, rgba(0,255,159,0.04) 0%, transparent 70%); }
+
+.flow-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+}
+
+.flow-step {
+  flex: 1;
+  min-width: 140px;
+  text-align: center;
+  padding: 1.5rem 1rem;
+  background: var(--glass);
+  border: 1px solid var(--glass-b);
+  border-radius: 10px;
+  transition: all 0.3s;
+}
+.flow-step:hover {
+  background: rgba(0,245,255,0.06);
+  border-color: var(--cyan);
+  transform: translateY(-4px);
+  box-shadow: 0 0 20px rgba(0,245,255,0.1);
+}
+.flow-icon {
+  width: 54px; height: 54px;
+  border-radius: 50%;
+  background: rgba(0,245,255,0.08);
+  border: 1.5px solid rgba(0,245,255,0.25);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 1rem;
+  font-size: 1.3rem;
+  color: var(--cyan);
+  transition: all 0.3s;
+}
+.flow-step:hover .flow-icon { background: rgba(0,245,255,0.15); box-shadow: 0 0 20px rgba(0,245,255,0.3); }
+.flow-title { font-family: var(--font-head); font-size: 0.75rem; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+.flow-desc  { font-size: 0.78rem; color: rgba(228,238,255,0.55); }
+
+.flow-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.5rem;
+  color: var(--cyan);
+  opacity: 0.4;
+  font-size: 0.9rem;
+  padding-top: 1.5rem;
+  flex-shrink: 0;
+}
+
+/* ─── TECH STACK ────────────────────────────────────── */
+#tech { background: var(--bg2); }
+
+.tech-grid {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.tech-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-b);
+  border-radius: 12px;
+  padding: 2rem 2.5rem;
+  text-align: center;
+  min-width: 130px;
+  transition: all 0.35s;
+  cursor: default;
+}
+.tech-card:hover {
+  background: rgba(0,245,255,0.07);
+  border-color: var(--cyan);
+  transform: translateY(-6px);
+  box-shadow: 0 0 30px rgba(0,245,255,0.12);
+}
+.tech-card span { font-family: var(--font-head); font-size: 0.75rem; letter-spacing: 0.1em; color: rgba(228,238,255,0.7); margin-top: 1rem; display: block; }
+
+/* Tech icons (CSS-drawn) */
+.tech-icon {
+  width: 56px; height: 56px;
+  border-radius: 10px;
+  margin: 0 auto 0.8rem;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+/* Using Unicode/emoji-style representations */
+.tech-icon.python     { background-color:rgba(55,118,171,0.2); color:#4b8bbe; position:relative; }
+.tech-icon.tensorflow { background-color:rgba(255,111,0,0.15); color:#ff6f00; }
+.tech-icon.sklearn    { background-color:rgba(243,106,22,0.15); color:#f37626; }
+.tech-icon.pandas     { background-color:rgba(21,42,95,0.4);   color:#150272; background-color: rgba(130,190,255,0.1); color:#a8d0ff; }
+.tech-icon.streamlit  { background-color:rgba(255,75,75,0.15); color:#ff4b4b; }
+.tech-icon::before {
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 900;
+  font-size: 1.8rem;
+}
+.tech-icon.python::before     { content: '\f3e2'; color:#4b8bbe; }
+.tech-icon.tensorflow::before { content: '\e4b7'; color:#ff6f00; }
+.tech-icon.sklearn::before    { content: '\f1ec'; color:#f37626; }
+.tech-icon.pandas::before     { content: '\f080'; color:#a8d0ff; }
+.tech-icon.streamlit::before  { content: '\f200'; color:#ff4b4b; }
+
+/* ─── USE CASES ─────────────────────────────────────── */
+.usecase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+.usecase-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-b);
+  border-radius: 12px;
+  padding: 2.2rem 1.8rem;
+  transition: all 0.35s;
+}
+.usecase-card:hover {
+  border-color: var(--green);
+  transform: translateY(-6px);
+  box-shadow: 0 0 30px rgba(0,255,159,0.1);
+}
+.usecase-card i { font-size: 2rem; color: var(--green); margin-bottom: 1.2rem; display: block; }
+.usecase-card h3 { font-family: var(--font-head); font-size: 0.85rem; letter-spacing: 0.08em; margin-bottom: 0.8rem; }
+.usecase-card p  { font-size: 0.85rem; color: rgba(228,238,255,0.6); }
+
+/* ─── FOOTER ────────────────────────────────────────── */
+#footer {
+  position: relative;
+  z-index: 1;
+  padding: 4rem 0 2.5rem;
+  border-top: 1px solid rgba(0,245,255,0.1);
+  overflow: hidden;
+}
+.footer-glow {
+  position: absolute;
+  top: 0; left: 50%; transform: translateX(-50%);
+  width: 600px; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--cyan), var(--green), transparent);
+  box-shadow: 0 0 30px rgba(0,245,255,0.4);
+}
+.footer-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.5rem;
+}
+.footer-logo { font-family: var(--font-head); font-size: 1.8rem; font-weight: 900; color: var(--cyan); letter-spacing: 0.2em; text-shadow: 0 0 20px rgba(0,245,255,0.5); }
+.footer-tagline { font-family: var(--font-head); font-size: 0.75rem; letter-spacing: 0.15em; color: var(--green); margin-top: 0.3rem; }
+.footer-links { display: flex; gap: 2rem; flex-wrap: wrap; justify-content: center; }
+.footer-links a { font-family: var(--font-head); font-size: 0.65rem; letter-spacing: 0.15em; color: var(--muted); text-decoration: none; transition: color 0.3s; }
+.footer-links a:hover { color: var(--cyan); }
+.footer-copy { font-size: 0.72rem; color: var(--muted); }
+
+/* ─── RESPONSIVE ────────────────────────────────────── */
+@media (max-width: 900px) {
+  .about-grid { grid-template-columns: 1fr; }
+  .dash-stats  { grid-template-columns: repeat(2,1fr); }
+  .dash-charts { grid-template-columns: 1fr; }
+  .flow-row    { flex-direction: column; }
+  .flow-arrow  { transform: rotate(90deg); padding: 0; align-self: center; }
+}
+@media (max-width: 600px) {
+  .dash-stats { grid-template-columns: 1fr 1fr; }
+  .features-grid { grid-template-columns: 1fr; }
+  .about-stats { flex-direction: column; gap: 1rem; }
+  h1.glitch { font-size: 3rem; }
+}
+
+</style>
+</head>
+<body>
+
+  <!-- CANVAS BACKGROUND -->
+  <canvas id="particle-canvas"></canvas>
+
+  <!-- ─── HEADER ──────────────────────────────────────── -->
+  <header id="hero">
+    <div class="hero-inner">
+      <div class="badge">SYSTEM ONLINE</div>
+      <h1 id="hero-title" class="glitch" data-text="CONTROLU">CONTROLU</h1>
+      <p class="subtitle">AI-Powered Intrusion Detection System</p>
+      <p class="tagline" id="typewriter"></p>
+      <div class="hero-cta">
+        <a href="#about" class="btn-primary">Explore System</a>
+        <a href="#dashboard" class="btn-ghost">Live Dashboard</a>
+      </div>
+    </div>
+    <!-- Scroll hint -->
+    <div class="scroll-hint"><span></span></div>
+  </header>
+
+  <!-- ─── HERO VISUAL ──────────────────────────────────── -->
+  <section id="hero-visual">
+    <div class="shield-wrapper reveal">
+      <!-- Animated Shield SVG -->
+      <svg class="shield-svg" viewBox="0 0 220 260" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="glow-blue">
+            <feGaussianBlur stdDeviation="4" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glow-cyan">
+            <feGaussianBlur stdDeviation="6" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#00f5ff;stop-opacity:0.15"/>
+            <stop offset="100%" style="stop-color:#0040ff;stop-opacity:0.05"/>
+          </linearGradient>
+        </defs>
+        <!-- Outer ring -->
+        <circle cx="110" cy="130" r="105" fill="none" stroke="#00f5ff" stroke-width="0.5" opacity="0.3" class="ring ring1"/>
+        <circle cx="110" cy="130" r="90" fill="none" stroke="#00ff9f" stroke-width="0.3" opacity="0.2" class="ring ring2"/>
+        <!-- Shield body -->
+        <path d="M110 10 L200 48 L200 130 C200 185 155 230 110 250 C65 230 20 185 20 130 L20 48 Z"
+              fill="url(#shieldGrad)" stroke="#00f5ff" stroke-width="1.5" filter="url(#glow-cyan)" class="shield-body"/>
+        <!-- Inner shield -->
+        <path d="M110 36 L178 62 L178 128 C178 170 148 205 110 222 C72 205 42 170 42 128 L42 62 Z"
+              fill="none" stroke="#00ff9f" stroke-width="0.8" opacity="0.5"/>
+        <!-- AI eye -->
+        <ellipse cx="110" cy="130" rx="30" ry="18" fill="none" stroke="#00f5ff" stroke-width="1.5" filter="url(#glow-cyan)"/>
+        <circle cx="110" cy="130" r="10" fill="#00f5ff" opacity="0.9" filter="url(#glow-blue)" class="eye-pulse"/>
+        <circle cx="110" cy="130" r="4" fill="#0a0f1c"/>
+        <!-- scan lines -->
+        <line x1="42" y1="110" x2="178" y2="110" stroke="#00f5ff" stroke-width="0.5" opacity="0.4" class="scan-line"/>
+        <line x1="42" y1="130" x2="178" y2="130" stroke="#00f5ff" stroke-width="0.5" opacity="0.4" class="scan-line" style="animation-delay:.3s"/>
+        <line x1="42" y1="150" x2="178" y2="150" stroke="#00f5ff" stroke-width="0.5" opacity="0.4" class="scan-line" style="animation-delay:.6s"/>
+        <!-- corner brackets -->
+        <g stroke="#00ff9f" stroke-width="1.5" fill="none" opacity="0.7">
+          <polyline points="75,80 60,80 60,95"/>
+          <polyline points="145,80 160,80 160,95"/>
+          <polyline points="75,180 60,180 60,165"/>
+          <polyline points="145,180 160,180 160,165"/>
+        </g>
+      </svg>
+      <!-- Network lines emanating from shield -->
+      <svg class="network-lines" viewBox="0 0 700 300" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="glow-net">
+            <feGaussianBlur stdDeviation="2" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <g stroke="#00f5ff" stroke-width="0.8" fill="none" opacity="0.5" filter="url(#glow-net)" class="net-lines">
+          <line x1="350" y1="150" x2="50" y2="50" class="net-anim"/>
+          <line x1="350" y1="150" x2="100" y2="270" class="net-anim" style="animation-delay:.2s"/>
+          <line x1="350" y1="150" x2="650" y2="60" class="net-anim" style="animation-delay:.4s"/>
+          <line x1="350" y1="150" x2="630" y2="250" class="net-anim" style="animation-delay:.6s"/>
+          <line x1="350" y1="150" x2="200" y2="20" class="net-anim" style="animation-delay:.8s"/>
+          <line x1="350" y1="150" x2="510" y2="280" class="net-anim" style="animation-delay:1s"/>
+        </g>
+        <g fill="#00f5ff" opacity="0.6">
+          <circle cx="50" cy="50" r="4" class="node-pulse"/>
+          <circle cx="100" cy="270" r="4" class="node-pulse" style="animation-delay:.3s"/>
+          <circle cx="650" cy="60" r="4" class="node-pulse" style="animation-delay:.6s"/>
+          <circle cx="630" cy="250" r="4" class="node-pulse" style="animation-delay:.9s"/>
+          <circle cx="200" cy="20" r="4" class="node-pulse" style="animation-delay:1.2s"/>
+          <circle cx="510" cy="280" r="4" class="node-pulse" style="animation-delay:1.5s"/>
+        </g>
+        <!-- Travelling packets -->
+        <circle r="3" fill="#00ff9f" filter="url(#glow-net)">
+          <animateMotion dur="2.5s" repeatCount="indefinite">
+            <mpath href="#path1"/>
+          </animateMotion>
+        </circle>
+        <path id="path1" d="M350,150 L50,50" fill="none"/>
+        <circle r="3" fill="#00ff9f" filter="url(#glow-net)">
+          <animateMotion dur="3s" repeatCount="indefinite">
+            <mpath href="#path2"/>
+          </animateMotion>
+        </circle>
+        <path id="path2" d="M350,150 L650,60" fill="none"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ─── ABOUT ────────────────────────────────────────── -->
+  <section id="about" class="section">
+    <div class="container reveal">
+      <div class="section-label">// ABOUT THE SYSTEM</div>
+      <h2 class="section-title">What is <span class="highlight">ControlU</span>?</h2>
+      <div class="about-grid">
+        <div class="about-text">
+          <p>ControlU is an intelligent AI-based system that monitors network traffic, detects anomalies, and prevents cyber threats in real time. Leveraging machine learning models trained on millions of attack patterns, ControlU delivers enterprise-grade security with millisecond response times.</p>
+          <p>Built for the modern threat landscape — from zero-day exploits to insider threats — ControlU adapts, learns, and evolves alongside attackers.</p>
+          <div class="about-stats">
+            <div class="stat-item"><span class="stat-num" data-target="99.8">0</span><span>%</span><div class="stat-label">Detection Rate</div></div>
+            <div class="stat-item"><span class="stat-num" data-target="12">0</span><span>ms</span><div class="stat-label">Response Time</div></div>
+            <div class="stat-item"><span class="stat-num" data-target="2400">0</span><span>+</span><div class="stat-label">Threats/Day Blocked</div></div>
+          </div>
+        </div>
+        <div class="about-visual">
+          <div class="terminal">
+            <div class="terminal-bar"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span><span class="terminal-title">controlu@system:~</span></div>
+            <div class="terminal-body" id="terminal-output"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FEATURES ─────────────────────────────────────── -->
+  <section id="features" class="section">
+    <div class="container">
+      <div class="section-label reveal">// CAPABILITIES</div>
+      <h2 class="section-title reveal">Key <span class="highlight">Features</span></h2>
+      <div class="features-grid">
+
+        <div class="feature-card reveal">
+          <div class="card-glow"></div>
+          <div class="feature-icon"><i class="fa-solid fa-brain"></i></div>
+          <h3>AI-Powered Detection</h3>
+          <p>Deep learning models analyze millions of data points per second to identify malicious patterns with near-perfect accuracy.</p>
+          <div class="card-tag">ML / Deep Learning</div>
+        </div>
+
+        <div class="feature-card reveal">
+          <div class="card-glow glow-green"></div>
+          <div class="feature-icon green"><i class="fa-solid fa-satellite-dish"></i></div>
+          <h3>Real-Time Monitoring</h3>
+          <p>24/7 continuous packet inspection across all network layers — from Layer 2 to Application layer — with zero blind spots.</p>
+          <div class="card-tag">Live Feed</div>
+        </div>
+
+        <div class="feature-card reveal">
+          <div class="card-glow glow-amber"></div>
+          <div class="feature-icon amber"><i class="fa-solid fa-bell"></i></div>
+          <h3>Instant Alerts</h3>
+          <p>Multi-channel alert delivery via SMS, email, and webhook within milliseconds of threat confirmation. No false silence.</p>
+          <div class="card-tag">Notification Engine</div>
+        </div>
+
+        <div class="feature-card reveal">
+          <div class="card-glow"></div>
+          <div class="feature-icon"><i class="fa-solid fa-gauge-high"></i></div>
+          <h3>Smart Dashboard</h3>
+          <p>Interactive, data-rich analytics interface giving security teams full situational awareness with drill-down forensics.</p>
+          <div class="card-tag">Analytics UI</div>
+        </div>
+
+        <div class="feature-card reveal">
+          <div class="card-glow glow-red"></div>
+          <div class="feature-icon red"><i class="fa-solid fa-virus-slash"></i></div>
+          <h3>Zero-Day Attack Detection</h3>
+          <p>Behavioral fingerprinting detects previously unknown exploits by identifying suspicious deviations from baseline behavior.</p>
+          <div class="card-tag">Heuristic Engine</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── DASHBOARD PREVIEW ────────────────────────────── -->
+  <section id="dashboard" class="section">
+    <div class="container">
+      <div class="section-label reveal">// LIVE DASHBOARD PREVIEW</div>
+      <h2 class="section-title reveal">Security <span class="highlight">Analytics</span></h2>
+      <div class="dashboard-wrapper reveal">
+        <!-- Top stats row -->
+        <div class="dash-stats">
+          <div class="dash-stat-card">
+            <div class="dsc-icon cyan"><i class="fa-solid fa-shield-halved"></i></div>
+            <div class="dsc-info"><span class="dsc-num" id="stat-attacks">0</span><span class="dsc-label">Attacks Blocked</span></div>
+          </div>
+          <div class="dash-stat-card">
+            <div class="dsc-icon red"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            <div class="dsc-info"><span class="dsc-num" id="stat-alerts">0</span><span class="dsc-label">Active Alerts</span></div>
+          </div>
+          <div class="dash-stat-card">
+            <div class="dsc-icon green"><i class="fa-solid fa-arrow-trend-up"></i></div>
+            <div class="dsc-info"><span class="dsc-num" id="stat-traffic">0</span><span class="dsc-label">GB Traffic Monitored</span></div>
+          </div>
+          <div class="dash-stat-card">
+            <div class="dsc-icon amber"><i class="fa-solid fa-user-secret"></i></div>
+            <div class="dsc-info"><span class="dsc-num" id="stat-threats">0</span><span class="dsc-label">Threat Actors Flagged</span></div>
+          </div>
+        </div>
+        <!-- Charts row -->
+        <div class="dash-charts">
+          <div class="chart-card big">
+            <div class="chart-header"><span>Network Anomaly Timeline</span><span class="chart-badge live">LIVE</span></div>
+            <canvas id="lineChart"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-header"><span>Threat Distribution</span></div>
+            <canvas id="doughnutChart"></canvas>
+          </div>
+        </div>
+        <!-- Threat log -->
+        <div class="threat-log">
+          <div class="chart-header"><span><i class="fa-solid fa-list"></i> &nbsp;Threat Log</span><span class="chart-badge">REALTIME</span></div>
+          <div class="log-list" id="log-list"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── HOW IT WORKS ─────────────────────────────────── -->
+  <section id="how" class="section">
+    <div class="container">
+      <div class="section-label reveal">// PIPELINE</div>
+      <h2 class="section-title reveal">How It <span class="highlight">Works</span></h2>
+      <div class="flow-row reveal">
+
+        <div class="flow-step">
+          <div class="flow-icon"><i class="fa-solid fa-database"></i></div>
+          <div class="flow-title">Data Collection</div>
+          <div class="flow-desc">Raw packet capture from all network interfaces via libpcap agents</div>
+        </div>
+        <div class="flow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+        <div class="flow-step">
+          <div class="flow-icon"><i class="fa-solid fa-microchip"></i></div>
+          <div class="flow-title">Processing</div>
+          <div class="flow-desc">Feature extraction, normalization, and stream reassembly at line speed</div>
+        </div>
+        <div class="flow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+        <div class="flow-step">
+          <div class="flow-icon"><i class="fa-solid fa-brain"></i></div>
+          <div class="flow-title">AI Analysis</div>
+          <div class="flow-desc">Ensemble ML models score each flow for anomaly probability</div>
+        </div>
+        <div class="flow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+        <div class="flow-step">
+          <div class="flow-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+          <div class="flow-title">Threat Detection</div>
+          <div class="flow-desc">Cross-reference against CVE database and behavioral baselines</div>
+        </div>
+        <div class="flow-arrow"><i class="fa-solid fa-chevron-right"></i></div>
+
+        <div class="flow-step">
+          <div class="flow-icon"><i class="fa-solid fa-bell"></i></div>
+          <div class="flow-title">Alert System</div>
+          <div class="flow-desc">Automated response, quarantine, and multi-channel notifications</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── TECHNOLOGIES ─────────────────────────────────── -->
+  <section id="tech" class="section">
+    <div class="container">
+      <div class="section-label reveal">// TECH STACK</div>
+      <h2 class="section-title reveal">Technologies <span class="highlight">Used</span></h2>
+      <div class="tech-grid reveal">
+
+        <div class="tech-card">
+          <div class="tech-icon python"></div>
+          <span>Python</span>
+        </div>
+        <div class="tech-card">
+          <div class="tech-icon tensorflow"></div>
+          <span>TensorFlow</span>
+        </div>
+        <div class="tech-card">
+          <div class="tech-icon sklearn"></div>
+          <span>Scikit-learn</span>
+        </div>
+        <div class="tech-card">
+          <div class="tech-icon pandas"></div>
+          <span>Pandas</span>
+        </div>
+        <div class="tech-card">
+          <div class="tech-icon streamlit"></div>
+          <span>Streamlit</span>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── USE CASES ────────────────────────────────────── -->
+  <section id="usecases" class="section">
+    <div class="container">
+      <div class="section-label reveal">// APPLICATIONS</div>
+      <h2 class="section-title reveal">Use <span class="highlight">Cases</span></h2>
+      <div class="usecase-grid">
+        <div class="usecase-card reveal">
+          <i class="fa-solid fa-network-wired"></i>
+          <h3>Network Security</h3>
+          <p>Protect enterprise LAN/WAN infrastructure from lateral movement attacks, port scans, and DDoS floods in real time.</p>
+        </div>
+        <div class="usecase-card reveal">
+          <i class="fa-solid fa-cloud"></i>
+          <h3>Cloud Protection</h3>
+          <p>Monitor VPC traffic flows in AWS, Azure, and GCP environments. Integrate with cloud-native security services seamlessly.</p>
+        </div>
+        <div class="usecase-card reveal">
+          <i class="fa-solid fa-user-secret"></i>
+          <h3>Insider Threat Detection</h3>
+          <p>User behaviour analytics (UBA) flags anomalous access patterns that signature-based tools routinely miss.</p>
+        </div>
+        <div class="usecase-card reveal">
+          <i class="fa-solid fa-eye"></i>
+          <h3>Real-time Monitoring</h3>
+          <p>Continuous visibility across hybrid environments with sub-second telemetry streaming to the central dashboard.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ───────────────────────────────────────── -->
+  <footer id="footer">
+    <div class="footer-glow"></div>
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <span class="footer-logo">CONTROLU</span>
+        <p class="footer-tagline">"Control Today, Secure Tomorrow"</p>
+      </div>
+      <div class="footer-links">
+        <a href="#hero">Home</a>
+        <a href="#about">About</a>
+        <a href="#features">Features</a>
+        <a href="#dashboard">Dashboard</a>
+        <a href="#tech">Tech Stack</a>
+      </div>
+      <p class="footer-copy">© 2025 ControlU · AI-Powered Intrusion Detection · All Rights Reserved</p>
+    </div>
+  </footer>
+
+<script>
+/* ─── PARTICLE CANVAS BACKGROUND ───────────────────── */
+(function initParticles() {
+  const canvas = document.getElementById('particle-canvas');
+  const ctx = canvas.getContext('2d');
+  let W = canvas.width  = window.innerWidth;
+  let H = canvas.height = window.innerHeight;
+
+  const PARTICLE_COUNT = Math.min(Math.floor(W * 0.06), 100);
+  const CONNECTION_DIST = 130;
+  const COLORS = ['rgba(0,245,255,', 'rgba(0,255,159,', 'rgba(0,102,255,'];
+
+  const particles = Array.from({ length: PARTICLE_COUNT }, () => ({
+    x: Math.random() * W,
+    y: Math.random() * H,
+    vx: (Math.random() - 0.5) * 0.4,
+    vy: (Math.random() - 0.5) * 0.4,
+    r: Math.random() * 1.8 + 0.5,
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+  }));
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    // draw connections
+    for (let i = 0; i < particles.length; i++) {
+      for (let j = i + 1; j < particles.length; j++) {
+        const dx = particles[i].x - particles[j].x;
+        const dy = particles[i].y - particles[j].y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < CONNECTION_DIST) {
+          const a = 1 - dist / CONNECTION_DIST;
+          ctx.strokeStyle = particles[i].color + (a * 0.25) + ')';
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(particles[i].x, particles[i].y);
+          ctx.lineTo(particles[j].x, particles[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+    // draw particles
+    particles.forEach(p => {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = p.color + '0.7)';
+      ctx.fill();
+      // move
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0 || p.x > W) p.vx *= -1;
+      if (p.y < 0 || p.y > H) p.vy *= -1;
+    });
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  window.addEventListener('resize', () => {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  });
+})();
+
+/* ─── TYPEWRITER ────────────────────────────────────── */
+(function typewriter() {
+  const el = document.getElementById('typewriter');
+  const text = 'Detect. Analyze. Protect.';
+  let i = 0;
+  function type() {
+    if (i < text.length) { el.textContent += text[i++]; setTimeout(type, 80); }
+  }
+  setTimeout(type, 1200);
+})();
+
+/* ─── SCROLL REVEAL ─────────────────────────────────── */
+(function scrollReveal() {
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        // stagger children if present
+        const children = e.target.querySelectorAll('.reveal');
+        children.forEach((c, idx) => {
+          setTimeout(() => c.classList.add('visible'), idx * 120);
+        });
+      }
+    });
+  }, { threshold: 0.12 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+})();
+
+/* ─── ANIMATED STAT COUNTERS ────────────────────────── */
+function animateCounter(el, target, decimals = 0, duration = 1800) {
+  const start = performance.now();
+  function update(now) {
+    const progress = Math.min((now - start) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3); // ease-out-cubic
+    const val = eased * target;
+    el.textContent = decimals ? val.toFixed(decimals) : Math.floor(val).toLocaleString();
+    if (progress < 1) requestAnimationFrame(update);
+    else el.textContent = decimals ? target.toFixed(decimals) : target.toLocaleString();
+  }
+  requestAnimationFrame(update);
+}
+
+const statObserver = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.querySelectorAll('.stat-num').forEach(el => {
+        const target = parseFloat(el.dataset.target);
+        const decimals = target % 1 !== 0 ? 1 : 0;
+        animateCounter(el, target, decimals);
+      });
+      statObserver.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.3 });
+document.querySelector('#about .container') && statObserver.observe(document.querySelector('#about .container'));
+
+/* ─── DASHBOARD STAT COUNTERS ───────────────────────── */
+const dashObserver = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      animateCounter(document.getElementById('stat-attacks'), 2487, 0, 2000);
+      animateCounter(document.getElementById('stat-alerts'),  17,   0, 1200);
+      animateCounter(document.getElementById('stat-traffic'), 342,  0, 1800);
+      animateCounter(document.getElementById('stat-threats'), 94,   0, 1500);
+      dashObserver.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.2 });
+document.querySelector('#dashboard') && dashObserver.observe(document.querySelector('#dashboard'));
+
+/* ─── CHARTS ────────────────────────────────────────── */
+Chart.defaults.color = '#5a7090';
+Chart.defaults.font.family = "'Exo 2', sans-serif";
+
+// Line chart — anomaly timeline
+const lineCtx = document.getElementById('lineChart')?.getContext('2d');
+if (lineCtx) {
+  const labels = Array.from({length: 20}, (_, i) => {
+    const d = new Date(Date.now() - (19 - i) * 60000);
+    return d.getHours() + ':' + String(d.getMinutes()).padStart(2, '0');
+  });
+
+  const baseData = () => Array.from({length: 20}, (_, i) =>
+    Math.round(20 + Math.sin(i * 0.5) * 8 + Math.random() * 12));
+
+  const lineChart = new Chart(lineCtx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Anomaly Score',
+          data: baseData(),
+          borderColor: '#00f5ff',
+          backgroundColor: 'rgba(0,245,255,0.06)',
+          borderWidth: 1.8,
+          pointRadius: 2,
+          pointHoverRadius: 5,
+          tension: 0.45,
+          fill: true,
+        },
+        {
+          label: 'Blocked Threats',
+          data: baseData().map(v => Math.floor(v * 0.4)),
+          borderColor: '#00ff9f',
+          backgroundColor: 'rgba(0,255,159,0.05)',
+          borderWidth: 1.5,
+          pointRadius: 2,
+          tension: 0.4,
+          fill: true,
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      animation: { duration: 800 },
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 10, font: { size: 11 } } },
+        tooltip: {
+          backgroundColor: '#0d1529',
+          borderColor: '#00f5ff',
+          borderWidth: 1,
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 10 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { font: { size: 10 } } },
+      }
+    }
+  });
+
+  // Live update every 3 seconds
+  setInterval(() => {
+    lineChart.data.labels.push(new Date().getHours() + ':' + String(new Date().getMinutes()).padStart(2,'0'));
+    lineChart.data.labels.shift();
+    lineChart.data.datasets[0].data.push(Math.round(20 + Math.random() * 30));
+    lineChart.data.datasets[0].data.shift();
+    lineChart.data.datasets[1].data.push(Math.round(5 + Math.random() * 15));
+    lineChart.data.datasets[1].data.shift();
+    lineChart.update('none');
+  }, 3000);
+}
+
+// Doughnut chart — threat types
+const doughCtx = document.getElementById('doughnutChart')?.getContext('2d');
+if (doughCtx) {
+  new Chart(doughCtx, {
+    type: 'doughnut',
+    data: {
+      labels: ['SQL Injection', 'DDoS', 'Port Scan', 'Brute Force', 'Zero-Day', 'Other'],
+      datasets: [{
+        data: [28, 22, 18, 15, 10, 7],
+        backgroundColor: [
+          'rgba(0,245,255,0.7)',
+          'rgba(255,60,95,0.7)',
+          'rgba(255,170,0,0.7)',
+          'rgba(0,102,255,0.7)',
+          'rgba(0,255,159,0.7)',
+          'rgba(120,80,180,0.7)',
+        ],
+        borderColor: '#0a0f1c',
+        borderWidth: 2,
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      cutout: '65%',
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 }, padding: 10 } },
+        tooltip: {
+          backgroundColor: '#0d1529',
+          borderColor: 'rgba(0,245,255,0.3)',
+          borderWidth: 1,
+        }
+      }
+    }
+  });
+}
+
+/* ─── TERMINAL ANIMATION ────────────────────────────── */
+(function terminalAnim() {
+  const output = document.getElementById('terminal-output');
+  if (!output) return;
+
+  const lines = [
+    { text: '> Initializing ControlU v2.4.1...', cls: 'info', delay: 300 },
+    { text: '> Loading AI model weights... [████████████] 100%', cls: '', delay: 700 },
+    { text: '> Network interfaces bound: eth0, eth1', cls: '', delay: 1200 },
+    { text: '> Starting packet capture engine...', cls: '', delay: 1700 },
+    { text: '> [OK] Anomaly detection pipeline ACTIVE', cls: 'info', delay: 2200 },
+    { text: '> [WARN] Unusual traffic spike: 192.168.1.42', cls: 'warn', delay: 2800 },
+    { text: '> Analyzing flow: 192.168.1.42 → 10.0.0.5:22', cls: '', delay: 3400 },
+    { text: '> [THREAT] SSH brute-force detected!', cls: 'err', delay: 3900 },
+    { text: '> Auto-blocking 192.168.1.42... DONE', cls: 'info', delay: 4400 },
+    { text: '> Alert dispatched to admin@domain.com', cls: '', delay: 4900 },
+    { text: '> Resuming monitoring...', cls: '', delay: 5400 },
+    { text: '> System status: PROTECTED ✓_', cls: 'info', delay: 6000 },
+  ];
+
+  lines.forEach(({ text, cls, delay }) => {
+    setTimeout(() => {
+      const div = document.createElement('div');
+      div.className = 't-line ' + cls;
+      div.textContent = text;
+      output.appendChild(div);
+      output.scrollTop = output.scrollHeight;
+    }, delay);
+  });
+})();
+
+/* ─── THREAT LOG ────────────────────────────────────── */
+(function threatLog() {
+  const list = document.getElementById('log-list');
+  if (!list) return;
+
+  const threats = [
+    { sev: 'HIGH', ip: '103.21.244.0',   type: 'SQL Injection Attempt',     time: '14:22:01' },
+    { sev: 'MED',  ip: '185.176.26.40',  type: 'Port Scan (SYN flood)',      time: '14:22:04' },
+    { sev: 'HIGH', ip: '91.108.4.9',     type: 'Brute Force SSH',            time: '14:22:08' },
+    { sev: 'LOW',  ip: '172.217.3.110',  type: 'Suspicious DNS Query',       time: '14:22:12' },
+    { sev: 'MED',  ip: '104.26.11.22',   type: 'Outbound C2 Beacon',         time: '14:22:17' },
+    { sev: 'HIGH', ip: '45.142.212.100', type: 'Zero-Day Exploit Signature', time: '14:22:21' },
+  ];
+
+  const initial = threats.slice(0, 4);
+  initial.forEach(t => list.appendChild(makeLogEntry(t)));
+
+  // add new entries periodically
+  let idx = 4;
+  setInterval(() => {
+    if (list.children.length >= 6) list.removeChild(list.firstChild);
+    list.appendChild(makeLogEntry(threats[idx % threats.length]));
+    idx++;
+  }, 3500);
+
+  function makeLogEntry({ sev, ip, type, time }) {
+    const div = document.createElement('div');
+    const cls = sev === 'HIGH' ? 'high' : sev === 'MED' ? 'med' : 'low';
+    div.className = 'log-entry ' + cls;
+    const now = new Date();
+    const ts = now.getHours() + ':' + String(now.getMinutes()).padStart(2,'0') + ':' + String(now.getSeconds()).padStart(2,'0');
+    div.innerHTML = `<span class="log-sev">${sev}</span><span class="log-ip">${ip}</span><span class="log-type">${type}</span><span class="log-time">${ts}</span>`;
+    return div;
+  }
+})();
+
+/* ─── SMOOTH SCROLL ─────────────────────────────────── */
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) target.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+
+</script>
+</body>
+</html>
